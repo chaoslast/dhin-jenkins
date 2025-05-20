@@ -25,9 +25,9 @@ pipeline {
             script: "ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $CURRENT_LINK | grep blue && echo green || echo blue'",
             returnStdout: true
           ).trim()
-          echo "다음 배포 대상: ${target}"
-          env.TARGET_COLOR = target
+          env.TARGET_NAME = target
           env.TARGET_DIR = "/var/www/webapp_${target}"
+          echo "🎯 이번 배포 대상 디렉토리: ${env.TARGET_DIR}"
         }
       }
     }
@@ -36,9 +36,9 @@ pipeline {
       steps {
         sshagent (credentials: ['webserver-key']) {
           sh """
-          echo '배포 대상 디렉토리 준비 중...'
-          ssh $DEPLOY_USER@$DEPLOY_HOST "mkdir -p \$TARGET_DIR"
-          scp index.html $DEPLOY_USER@$DEPLOY_HOST:\$TARGET_DIR/
+          echo '📦 배포 디렉토리 생성 및 파일 전송 중...'
+          ssh $DEPLOY_USER@$DEPLOY_HOST 'mkdir -p ${TARGET_DIR}'
+          scp index.html $DEPLOY_USER@$DEPLOY_HOST:${TARGET_DIR}/index.html
           """
         }
       }
@@ -54,11 +54,16 @@ pipeline {
       steps {
         sshagent (credentials: ['webserver-key']) {
           sh """
-          echo '운영 심볼릭 링크를 새 디렉토리로 전환 중...'
+          echo '🔁 운영 심볼릭 링크를 새 디렉토리로 전환 중...'
           ssh $DEPLOY_USER@$DEPLOY_HOST 'ln -snf ${TARGET_DIR} ${CURRENT_LINK}'
-          ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink -f ${CURRENT_LINK}'
           """
         }
+      }
+    }
+    
+    stage('Confirm') {
+      steps {
+        echo "✅ 배포 완료! ${CURRENT_LINK} → ${TARGET_DIR} 로 전환됨"
       }
     }
   }
