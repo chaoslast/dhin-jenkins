@@ -46,7 +46,7 @@ pipeline {
 
     stage('Approval to Switch') {
       steps {
-        input message: "서버에서 http://${DEPLOY_HOST}/ 확인 후 OK를 눌러주세요. (현재: ${TARGET_COLOR})"
+        input message: "신규 배포 디렉토리(${env.TARGET_DIR})에서 정상 동작하는지 확인 후 OK를 눌러주세요. (현재: ${TARGET_COLOR})"
       }
     }
 
