@@ -20,7 +20,7 @@ pipeline {
       steps {
         script {
           def target = sh(
-            script: "ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $CURRENT_LINK | grep blue && echo green || echo blue'",
+            script: "sudo su && ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $CURRENT_LINK | grep blue && echo green || echo blue'",
             returnStdout: true
           ).trim()
           env.TARGET_DIR = "/var/www/webapp_${target}"
