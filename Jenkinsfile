@@ -27,6 +27,7 @@ pipeline {
           ).trim()
           echo "다음 배포 대상: ${target}"
           env.TARGET_COLOR = target
+          env.TARGET_DIR = "/var/www/webapp_${target}"
         }
       }
     }
@@ -36,7 +37,6 @@ pipeline {
         sshagent (credentials: ['webserver-key']) {
           sh """
           echo '배포 대상 디렉토리 준비 중...'
-          TARGET_DIR="/var/www/webapp_\${TARGET_COLOR}"
           ssh $DEPLOY_USER@$DEPLOY_HOST "mkdir -p \$TARGET_DIR"
           scp index.html $DEPLOY_USER@$DEPLOY_HOST:\$TARGET_DIR/
           """
@@ -46,7 +46,7 @@ pipeline {
 
     stage('Approval to Switch') {
       steps {
-        input message: "신규 배포 디렉토리(${env.TARGET_DIR})에서 정상 동작하는지 확인 후 OK를 눌러주세요. (현재: ${TARGET_COLOR})"
+        input message: "신규 배포 디렉토리 ${TARGET_COLOR} 에서 정상 동작하는지 확인 후 OK를 눌러주세요. (현재: ${TARGET_COLOR})"
       }
     }
 
@@ -55,8 +55,8 @@ pipeline {
         sshagent (credentials: ['webserver-key']) {
           sh """
           echo '운영 심볼릭 링크를 새 디렉토리로 전환 중...'
-          TARGET_DIR="/var/www/webapp_\${TARGET_COLOR}"
-          ssh $DEPLOY_USER@$DEPLOY_HOST "ln -snf \$TARGET_DIR $CURRENT_LINK"
+          ssh $DEPLOY_USER@$DEPLOY_HOST 'ln -snf ${TARGET_DIR} ${CURRENT_LINK}'
+          ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink -f ${CURRENT_LINK}'
           """
         }
       }
