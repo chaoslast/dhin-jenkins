@@ -19,20 +19,17 @@ pipeline {
     stage('Determine Target') {
       steps {
         script {
-          def target = sh(
-            script: """
-              ssh $DEPLOY_USER@$DEPLOY_HOST '
-                if readlink $CURRENT_LINK | grep -q blue; then
-                  echo green
-                else
-                  echo blue
-                fi
-              '
-            """,
+          def currentTarget = sh(
+            script: "ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $CURRENT_LINK'",
             returnStdout: true
           ).trim()
-          env.TARGET_NAME = target
-          env.TARGET_DIR = "/var/www/webapp_${target}"
+
+          echo "현재 운영 디렉토리: ${currentTarget}"
+
+          def nextTarget = currentTarget.contains("blue") ? "green" : "blue"
+          env.TARGET_NAME = nextTarget
+          env.TARGET_DIR = "/var/www/webapp_${nextTarget}"
+
           echo "🎯 이번 배포 디렉토리: ${env.TARGET_DIR}"
         }
       }
