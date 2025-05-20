@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    DEPLOY_USER = 'jen' // Web 서버 로그인 계정
+    DEPLOY_USER = 'user' // Web 서버 로그인 계정
     DEPLOY_HOST = '10.0.50.8' // Web 서버 IP
     BLUE_DIR = '/var/www/webapp-blue'
     GREEN_DIR = '/var/www/webapp_green'
