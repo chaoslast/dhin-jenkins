@@ -2,17 +2,19 @@ pipeline {
   agent any
 
   environment {
-    DEPLOY_USER = 'user' // Web 서버 로그인 계정
+    DEPLOY_USER = 'user' // Web 서버 SSH 계정
     DEPLOY_HOST = '10.0.50.8' // Web 서버 IP
-    BLUE_DIR = '/var/www/webapp-blue'
+    BLUE_DIR = '/var/www/webapp_blue'
     GREEN_DIR = '/var/www/webapp_green'
-    CURRENT_LINK = '/var/www/webapp' // 운영 중인 링크
+    CURRENT_LINK = '/var/www/webapp' // 현재 운영 중인 심볼릭 링크
   }
 
   stages {
     stage('Clone') {
       steps {
-        git branch: 'blue-green', url: 'https://github.com/chaoslast/dhin-jenkins.git', credentialsId: 'git-test'
+        git branch: 'blue-green',
+            url: 'https://github.com/chaoslast/dhin-jenkins.git',
+            credentialsId: 'git-test'
       }
     }
 
@@ -23,8 +25,8 @@ pipeline {
             script: "ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $CURRENT_LINK | grep blue && echo green || echo blue'",
             returnStdout: true
           ).trim()
-          env.TARGET_DIR = "/var/www/webapp_${target}"
-          echo "이번 배포 대상 디렉토리: $TARGET_DIR"
+          echo "다음 배포 대상: ${target}"
+          env.TARGET_COLOR = target
         }
       }
     }
@@ -33,9 +35,10 @@ pipeline {
       steps {
         sshagent (credentials: ['webserver-key']) {
           sh """
-          echo 'Blue/Green 대상 디렉토리에 배포 중...'
-          ssh $DEPLOY_USER@$DEPLOY_HOST 'mkdir -p $TARGET_DIR'
-          scp index.html $DEPLOY_USER@$DEPLOY_HOST:$TARGET_DIR/
+          echo '배포 대상 디렉토리 준비 중...'
+          TARGET_DIR="/var/www/webapp_\${TARGET_COLOR}"
+          ssh $DEPLOY_USER@$DEPLOY_HOST "mkdir -p \$TARGET_DIR"
+          scp index.html $DEPLOY_USER@$DEPLOY_HOST:\$TARGET_DIR/
           """
         }
       }
@@ -43,7 +46,7 @@ pipeline {
 
     stage('Approval to Switch') {
       steps {
-        input message: "신규 배포 디렉토리(${env.TARGET_DIR})에서 정상 동작하는지 확인 후 OK를 눌러주세요."
+        input message: "서버에서 http://${DEPLOY_HOST}/ 확인 후 OK를 눌러주세요. (현재: ${TARGET_COLOR})"
       }
     }
 
@@ -52,13 +55,11 @@ pipeline {
         sshagent (credentials: ['webserver-key']) {
           sh """
           echo '운영 심볼릭 링크를 새 디렉토리로 전환 중...'
-          ssh $DEPLOY_USER@$DEPLOY_HOST '
-            ln -snf $TARGET_DIR $CURRENT_LINK
-          '
+          TARGET_DIR="/var/www/webapp_\${TARGET_COLOR}"
+          ssh $DEPLOY_USER@$DEPLOY_HOST "ln -snf \$TARGET_DIR $CURRENT_LINK"
           """
         }
       }
     }
   }
 }
-
