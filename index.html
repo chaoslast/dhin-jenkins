@@ -2,47 +2,62 @@
 <html lang="en">
 	<head>
 		  <meta charset="UTF-8" />
-		    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-		      <title>Welcome</title>
-		        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;600&display=swap" rel="stylesheet">
-			  <style>
+		    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		      <title>Welcome to My Test Page</title>
+		        <style>
     body {
 	          margin: 0;
-			        padding: 0;
-					      background: linear-gradient(135deg, #1e3c72, #2a5298);
-						            font-family: 'Outfit', sans-serif;
-								          color: white;
-										        display: flex;
-												      flex-direction: column;
-													            justify-content: center;
-															          align-items: center;
-																	        height: 100vh;
-																			      animation: fadeIn 2s ease;
-																				          }
+			        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+					      background: linear-gradient(135deg, #667eea, #764ba2);
+						            color: #fff;
+								          display: flex;
+										        justify-content: center;
+												      align-items: center;
+													            height: 100vh;
+															        }
 
-        h1 {
-		      font-size: 3rem;
-			            font-weight: 600;
-					          margin: 0;
-							      }
+        .card {
+		      background-color: rgba(255, 255, 255, 0.1);
+			            padding: 40px;
+					          border-radius: 15px;
+							        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+									      text-align: center;
+										            backdrop-filter: blur(10px);
+												        }
 
-	    p {
-		          font-size: 1.2rem;
-				        font-weight: 300;
-						      margin-top: 10px;
-							            color: #d1d5db;
-									        }
+	    h1 {
+		          font-size: 2.5em;
+				        margin-bottom: 0.5em;
+						    }
 
-	        @keyframes fadeIn {
-			      from { opacity: 0; transform: translateY(20px); }
-			            to { opacity: 1; transform: translateY(0); }
-				        }
-		  </style>
+	        p {
+			      font-size: 1.2em;
+				            margin-top: 0;
+						        }
+
+		    .button {
+			          margin-top: 1em;
+					        padding: 10px 20px;
+							      font-size: 1em;
+								            color: #fff;
+										          background-color: #5a67d8;
+												        border: none;
+														      border-radius: 8px;
+															            cursor: pointer;
+																	          transition: background 0.3s ease;
+																			      }
+
+		        .button:hover {
+				      background-color: #434190;
+					          }
+			  </style>
 	</head>
 	<body>
-		  <h1>Welcome to My Page 👋</h1>
-		    <p>이곳은 Dhin의 테스트 웹페이지 입니다.</p>
-		    <p>Version 3.0 Test</p>
+		  <div class="card">
+			      <h1>🚀 배포 성공!</h1>
+			          <p>Jenkins를 통해 자동 배포되었습니다.</p>
+				      <button class="button" onclick="location.reload()">페이지 새로고침</button>
+				        </div>
 	</body>
 </html>
 
