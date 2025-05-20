@@ -2,11 +2,11 @@ pipeline {
   agent any
 
   environment {
-    DEPLOY_USER = 'user'
-    DEPLOY_HOST = '10.0.50.8'
+    DEPLOY_USER = 'user' // Web 서버 로그인 계정
+    DEPLOY_HOST = '10.0.50.8' // Web 서버 IP
     BLUE_DIR = '/var/www/webapp_blue'
     GREEN_DIR = '/var/www/webapp_green'
-    CURRENT_LINK = '/var/www/webapp'
+    CURRENT_LINK = '/var/www/webapp' // 운영 중인 링크
   }
 
   stages {
@@ -20,7 +20,15 @@ pipeline {
       steps {
         script {
           def target = sh(
-            script: "ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $CURRENT_LINK | grep blue && echo green || echo blue'",
+            script: """
+              ssh $DEPLOY_USER@$DEPLOY_HOST '
+                if readlink $CURRENT_LINK | grep -q blue; then
+                  echo green
+                else
+                  echo blue
+                fi
+              '
+            """,
             returnStdout: true
           ).trim()
           env.TARGET_NAME = target
@@ -34,9 +42,9 @@ pipeline {
       steps {
         sshagent (credentials: ['webserver-key']) {
           sh """
-          echo '📦 ${TARGET_DIR}에 배포 중...'
-          ssh $DEPLOY_USER@$DEPLOY_HOST 'mkdir -p ${TARGET_DIR}'
-          scp index.html $DEPLOY_USER@$DEPLOY_HOST:${TARGET_DIR}/index.html
+            echo '📦 ${env.TARGET_DIR}에 배포 중...'
+            ssh $DEPLOY_USER@$DEPLOY_HOST 'mkdir -p ${env.TARGET_DIR}'
+            scp index.html $DEPLOY_USER@$DEPLOY_HOST:${env.TARGET_DIR}/
           """
         }
       }
@@ -44,21 +52,19 @@ pipeline {
 
     stage('Approval to Switch') {
       steps {
-        input message: "🔍 ${TARGET_DIR}에서 정상 동작 확인 후 전환하려면 '계속'을 눌러주세요."
+        input message: "🔍 ${env.TARGET_DIR}에서 정상 동작 확인 후 전환하려면 '계속'을 눌러주세요."
       }
     }
 
     stage('Switch Symbolic Link') {
       steps {
         sshagent (credentials: ['webserver-key']) {
-          script {
-            // Groovy 변수로 문자열 생성
-            def switchCommand = "ln -snf ${env.TARGET_DIR} ${env.CURRENT_LINK}"
-            sh """
+          sh """
             echo '🔁 운영 심볼릭 링크를 새 디렉토리로 전환 중...'
-            ssh $DEPLOY_USER@$DEPLOY_HOST '${switchCommand}'
-            """
-          }
+            ssh $DEPLOY_USER@$DEPLOY_HOST '
+              ln -snf ${env.TARGET_DIR} ${CURRENT_LINK}
+            '
+          """
         }
       }
     }
