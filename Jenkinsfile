@@ -2,19 +2,17 @@ pipeline {
   agent any
 
   environment {
-    DEPLOY_USER = 'user' // Web 서버 SSH 계정
-    DEPLOY_HOST = '10.0.50.8' // Web 서버 IP
+    DEPLOY_USER = 'user'
+    DEPLOY_HOST = '10.0.50.8'
     BLUE_DIR = '/var/www/webapp_blue'
     GREEN_DIR = '/var/www/webapp_green'
-    CURRENT_LINK = '/var/www/webapp' // 현재 운영 중인 심볼릭 링크
+    CURRENT_LINK = '/var/www/webapp'
   }
 
   stages {
     stage('Clone') {
       steps {
-        git branch: 'blue-green',
-            url: 'https://github.com/chaoslast/dhin-jenkins.git',
-            credentialsId: 'git-test'
+        git branch: 'blue-green', url: 'https://github.com/chaoslast/dhin-jenkins.git', credentialsId: 'git-test'
       }
     }
 
@@ -27,7 +25,7 @@ pipeline {
           ).trim()
           env.TARGET_NAME = target
           env.TARGET_DIR = "/var/www/webapp_${target}"
-          echo "🎯 이번 배포 대상 디렉토리: ${env.TARGET_DIR}"
+          echo "🎯 이번 배포 디렉토리: ${env.TARGET_DIR}"
         }
       }
     }
@@ -36,7 +34,7 @@ pipeline {
       steps {
         sshagent (credentials: ['webserver-key']) {
           sh """
-          echo '📦 배포 디렉토리 생성 및 파일 전송 중...'
+          echo '📦 ${TARGET_DIR}에 배포 중...'
           ssh $DEPLOY_USER@$DEPLOY_HOST 'mkdir -p ${TARGET_DIR}'
           scp index.html $DEPLOY_USER@$DEPLOY_HOST:${TARGET_DIR}/index.html
           """
@@ -46,24 +44,22 @@ pipeline {
 
     stage('Approval to Switch') {
       steps {
-        input message: "신규 배포 디렉토리 ${TARGET_NAME} 에서 정상 동작하는지 확인 후 OK를 눌러주세요. (현재: ${TARGET_NAME})"
+        input message: "🔍 ${TARGET_DIR}에서 정상 동작 확인 후 전환하려면 '계속'을 눌러주세요."
       }
     }
 
     stage('Switch Symbolic Link') {
       steps {
         sshagent (credentials: ['webserver-key']) {
-          sh """
-          echo '🔁 운영 심볼릭 링크를 새 디렉토리로 전환 중...'
-          ssh $DEPLOY_USER@$DEPLOY_HOST 'ln -snf ${TARGET_DIR} ${CURRENT_LINK}'
-          """
+          script {
+            // Groovy 변수로 문자열 생성
+            def switchCommand = "ln -snf ${env.TARGET_DIR} ${env.CURRENT_LINK}"
+            sh """
+            echo '🔁 운영 심볼릭 링크를 새 디렉토리로 전환 중...'
+            ssh $DEPLOY_USER@$DEPLOY_HOST '${switchCommand}'
+            """
+          }
         }
-      }
-    }
-    
-    stage('Confirm') {
-      steps {
-        echo "✅ 배포 완료! ${CURRENT_LINK} → ${TARGET_DIR} 로 전환됨"
       }
     }
   }
