@@ -9,55 +9,52 @@ pipeline {
     }
 
     stages {
+        stage('Clone') {
+            steps {
+                git branch: 'blue-green', credentialsId: 'git-test', url: 'https://github.com/chaoslast/dhin-jenkins.git'
+            }
+        }
+
         stage('Determine Target') {
             steps {
                 script {
-                    def result = sh(
+                    def currentTarget = sh(
                         script: "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'readlink ${CURRENT_LINK}' || echo none",
                         returnStdout: true
                     ).trim()
 
-                    echo "현재 링크 경로: ${result}"
-
-                    if (result.contains('webapp_blue')) {
-                        env.TARGET = 'webapp_green'
+                    if (currentTarget.endsWith('webapp_blue')) {
+                        TARGET_DIR = "${BASE_DIR}/webapp_green"
                     } else {
-                        env.TARGET = 'webapp_blue'
+                        TARGET_DIR = "${BASE_DIR}/webapp_blue"
                     }
 
-                    env.TARGET_DIR = "${BASE_DIR}/${env.TARGET}"
-                    echo "🎯 이번 배포 디렉토리: ${env.TARGET_DIR}"
+                    echo "🎯 이번 배포 디렉토리: ${TARGET_DIR}"
                 }
             }
         }
 
-
         stage('Deploy to Target') {
             steps {
-                sshagent (credentials: ['webserver-key']) {
-                    sh """
-                        echo '📦 ${env.TARGET_DIR}에 배포 중...'
-                        ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'sudo mkdir -p ${env.TARGET_DIR}'
-                        ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'sudo chown user:user ${env.TARGET_DIR}'
-                        scp index.html ${DEPLOY_USER}@${DEPLOY_HOST}:${env.TARGET_DIR}/index.html
-                    """
+                sshagent(['user']) {
+                    sh "echo '📦 ${TARGET_DIR}에 배포 중...'"
+                    sh "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'mkdir -p ${TARGET_DIR}'"
+                    sh "scp index.html ${DEPLOY_USER}@${DEPLOY_HOST}:${TARGET_DIR}/index.html"
                 }
             }
         }
 
         stage('Approval to Switch') {
             steps {
-                input message: "🔍 ${env.TARGET_DIR}에서 정상 동작 확인 후 전환하려면 '계속'을 눌러주세요."
+                input message: "🔍 ${TARGET_DIR}에서 정상 동작 확인 후 전환하려면 '계속'을 눌러주세요."
             }
         }
 
         stage('Switch Symbolic Link') {
             steps {
-                sshagent (credentials: ['webserver-key']) {
-                    sh """
-                        echo '🔁 운영 심볼릭 링크를 새 디렉토리(${env.TARGET_DIR})로 전환 중...'
-                        ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'ln -snf ${env.TARGET_DIR} ${CURRENT_LINK}'
-                    """
+                sshagent(['user']) {
+                    sh "echo '🔁 운영 심볼릭 링크를 새 디렉토리로 전환 중...'"
+                    sh "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'ln -snf ${TARGET_DIR} ${CURRENT_LINK}'"
                 }
             }
         }
