@@ -12,7 +12,7 @@ pipeline {
             steps {
                 script {
                     def current = sh(script: "ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $SYMLINK' || echo none", returnStdout: true).trim()
-                    TARGET_DIR = (current == GREEN_DIR) ? BLUE_DIR : GREEN_DIR
+                    TARGET_DIR = (current == BLUE_DIR) ? BLUE_DIR : GREEN_DIR
                     echo "🎯 이번 배포 디렉토리: ${TARGET_DIR}"
                 }
             }
@@ -22,7 +22,8 @@ pipeline {
             steps {
                 sshagent(['webserver-key']) {
                     sh """
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'mkdir -p ${TARGET_DIR}'
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo mkdir -p ${TARGET_DIR}'
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo chown user:user ${TARGET_DIR}'
                         scp index.html $DEPLOY_USER@$DEPLOY_HOST:${TARGET_DIR}/index.html
                     """
                 }
