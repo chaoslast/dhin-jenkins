@@ -38,7 +38,7 @@ pipeline {
                     sh """
                         echo '📦 ${env.TARGET_DIR}에 배포 중...'
                         ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'sudo mkdir -p ${env.TARGET_DIR}'
-                        ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'sudo chown user:user webapp_blue/'
+                        ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'sudo chown user:user ${BASE_DIR}/${env.TARGET_DIR}'
                         scp index.html ${DEPLOY_USER}@${DEPLOY_HOST}:${env.TARGET_DIR}/index.html
                     """
                 }
