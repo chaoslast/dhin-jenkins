@@ -12,8 +12,8 @@ pipeline {
             steps {
                 sshagent(['webserver-key']) {
                     sh """
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo mkdir -p $LIVE_DIR'
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo chown user:user $LIVE_DIR'
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo mkdir -p $TEST_DIR'
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo chown user:user $TEST_DIR'
                         scp index.html $DEPLOY_USER@$DEPLOY_HOST:$TEST_DIR/index.html
                     """
                 }
