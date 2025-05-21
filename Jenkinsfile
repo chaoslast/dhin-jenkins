@@ -40,15 +40,24 @@ pipeline {
             }
         }
 
-        stage('Switch Symlink to GREEN') {
-            steps {
-                echo "🔁 운영 링크를 GREEN으로 전환합니다"
-                sshagent(['webserver-key']) {
-                    sh """
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'ln -snf $GREEN_DIR $SYMLINK'
-                    """
-                }
+        stage('Switch Symbolic Link') {
+          steps {
+             sshagent (credentials: ['user']) {
+              sh '''
+                echo '🧹 기존 webapp 디렉토리 정리 및 심볼릭 링크 전환 중...'
+        
+                # 1️⃣ 기존 index.html 제거 (디렉토리 자체가 물리 디렉토리일 경우만)
+                if [ ! -L /var/www/webapp ]; then
+                  echo '📂 기존 webapp 디렉토리가 심볼릭 링크가 아니므로 내용 삭제'
+                  rm -rf /var/www/webapp/*
+                  rmdir /var/www/webapp || true
+               fi
+
+                # 2️⃣ 새로운 심볼릭 링크 설정
+                ln -snf /var/www/webapp_green /var/www/webapp
+              '''
             }
-        }
+          }
+       }
     }
 }
