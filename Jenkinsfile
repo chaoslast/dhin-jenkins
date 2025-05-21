@@ -38,7 +38,8 @@ pipeline {
             steps {
                 sshagent(['webserver-key']) {
                     sh "echo '📦 ${TARGET_DIR}에 배포 중...'"
-                    sh "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'mkdir -p ${TARGET_DIR}'"
+                    sh "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'sudo mkdir -p ${TARGET_DIR}'"
+                    sh "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'sudo chown user:user ${TARGET_DIR}'"
                     sh "scp index.html ${DEPLOY_USER}@${DEPLOY_HOST}:${TARGET_DIR}/index.html"
                 }
             }
