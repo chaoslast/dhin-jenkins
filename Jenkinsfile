@@ -8,39 +8,44 @@ pipeline {
         SYMLINK = '/var/www/webapp'
     }
     stages {
-        stage('Determine Target') {
+        stage('Deploy to BLUE (Pre-test)') {
             steps {
-                script {
-                    def current = sh(script: "ssh $DEPLOY_USER@$DEPLOY_HOST 'readlink $SYMLINK' || echo none", returnStdout: true).trim()
-                    TARGET_DIR = (current == BLUE_DIR) ? BLUE_DIR : GREEN_DIR
-                    echo "🎯 이번 배포 디렉토리: ${TARGET_DIR}"
-                }
-            }
-        }
-
-        stage('Deploy to Target') {
-            steps {
+                echo "📦 BLUE 디렉토리에 먼저 배포합니다"
                 sshagent(['webserver-key']) {
                     sh """
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo mkdir -p ${TARGET_DIR}'
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo chown user:user ${TARGET_DIR}'
-                        scp index.html $DEPLOY_USER@$DEPLOY_HOST:${TARGET_DIR}/index.html
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo mkdir -p $BLUE_DIR'
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo chown user:user $BLUE_DIR'
+                        scp index.html $DEPLOY_USER@$DEPLOY_HOST:$BLUE_DIR/index.html
                     """
                 }
             }
         }
 
-        stage('Test Confirmation') {
+        stage('Test BLUE Before Switch') {
             steps {
-                input message: "🔍 ${TARGET_DIR}에서 정상 확인 후 계속하려면 '계속' 클릭"
+                input message: "🔍 http://<서버주소>/webapp_blue/index.html 에서 정상 확인되면 계속 진행"
             }
         }
 
-        stage('Switch Symlink') {
+        stage('Deploy to GREEN (Live Target)') {
             steps {
+                echo "📦 GREEN 디렉토리에 최종 배포합니다"
                 sshagent(['webserver-key']) {
                     sh """
-                        ssh $DEPLOY_USER@$DEPLOY_HOST 'ln -snf ${TARGET_DIR} ${SYMLINK}'
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo mkdir -p $GREEN_DIR'
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'sudo chown user:user $GREEN_DIR'
+                        scp index.html $DEPLOY_USER@$DEPLOY_HOST:$GREEN_DIR/index.html
+                    """
+                }
+            }
+        }
+
+        stage('Switch Symlink to GREEN') {
+            steps {
+                echo "🔁 운영 링크를 GREEN으로 전환합니다"
+                sshagent(['webserver-key']) {
+                    sh """
+                        ssh $DEPLOY_USER@$DEPLOY_HOST 'ln -snf $GREEN_DIR $SYMLINK'
                     """
                 }
             }
