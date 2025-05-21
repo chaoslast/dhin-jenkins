@@ -52,7 +52,7 @@ pipeline {
 
         stage('Switch Symbolic Link') {
             steps {
-                sshagent(['user']) {
+                sshagent(['webserver-key']) {
                     sh "echo '🔁 운영 심볼릭 링크를 새 디렉토리로 전환 중...'"
                     sh "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'ln -snf ${TARGET_DIR} ${CURRENT_LINK}'"
                 }
