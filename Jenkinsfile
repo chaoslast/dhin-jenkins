@@ -69,7 +69,7 @@ pipeline {
           sh """
             echo '🔁 운영 심볼릭 링크를 새 디렉토리로 전환 중...'
             ssh $DEPLOY_USER@$DEPLOY_HOST '
-              ln -snf ${env.TARGET_DIR} ${CURRENT_LINK}
+              ln -snf "${env.TARGET_DIR}" "${CURRENT_LINK}"
             '
           """
         }
