@@ -42,7 +42,7 @@ pipeline {
 
         stage('Switch Symbolic Link') {
           steps {
-             sshagent (credentials: ['user']) {
+             sshagent (credentials: ['webserver-key']) {
               sh '''
                 echo '🧹 기존 webapp 디렉토리 정리 및 심볼릭 링크 전환 중...'
         
