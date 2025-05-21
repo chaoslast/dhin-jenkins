@@ -24,7 +24,7 @@ pipeline {
 
     stage('Approval to Publish') {
       steps {
-        input message: "🔍 http://[IP]/webapp_blue/index.html 에서 정상 동작을 확인했으면 '계속'을 눌러주세요"
+        input message: "🔍 http://[IP]/webapp_blue/index.html 에서 정상 동작 확인 후 계속하세요."
       }
     }
 
@@ -32,16 +32,61 @@ pipeline {
       steps {
         sshagent (credentials: ['webserver-key']) {
           sh """
-            echo '📂 기존 운영 파일을 ${GREEN_DIR}에 백업합니다...'
+            echo '📂 현재 운영 index.html을 백업 (green) 중...'
             ssh ${WEB_SERVER} '
               sudo mkdir -p ${GREEN_DIR}
               sudo chown user:user ${GREEN_DIR}
-              cp -f ${LIVE_DIR}/index.html ${GREEN_DIR}/index.html || echo "No file to backup"
+              if [ -f ${LIVE_DIR}/index.html ]; then
+                cp -f ${LIVE_DIR}/index.html ${GREEN_DIR}/index.html
+              else
+                echo "기존 운영 파일 없음, 백업 생략"
+              fi
             '
-            echo '🚀 새로운 index.html을 운영 경로로 복사합니다...'
+
+            echo '🚀 blue에서 운영 index.html로 반영 중...'
             ssh ${WEB_SERVER} '
               cp -f ${BLUE_DIR}/index.html ${LIVE_DIR}/index.html
             '
+          """
+        }
+      }
+    }
+
+    stage('Rollback Option') {
+      steps {
+        script {
+          def doRollback = input(
+            id: 'userInput', message: '⚠️ 롤백할까요?', parameters: [
+              booleanParam(defaultValue: false, description: '기존 운영 상태로 롤백합니다.', name: 'Rollback')
+            ]
+          )
+
+          if (doRollback) {
+            echo '⏪ 롤백을 진행합니다...'
+            sshagent (credentials: ['webserver-key']) {
+              sh """
+                ssh ${WEB_SERVER} '
+                  if [ -f ${GREEN_DIR}/index.html ]; then
+                    cp -f ${GREEN_DIR}/index.html ${LIVE_DIR}/index.html
+                  else
+                    echo "⚠️ 롤백 파일이 없습니다. 롤백 불가"
+                    exit 1
+                  fi
+                '
+              """
+            }
+          } else {
+            echo '✅ 롤백 없이 완료됩니다.'
+          }
+        }
+      }
+    }
+    stage('Clean Up Blue') {
+      steps {
+        sshagent (credentials: ['webserver-key']) {
+          sh """
+            echo '🧹 blue 디렉터리를 삭제 중...'
+            ssh ${WEB_SERVER} 'sudo rm -rf ${BLUE_DIR}'
           """
         }
       }
