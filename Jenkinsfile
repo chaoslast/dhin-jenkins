@@ -36,7 +36,7 @@ pipeline {
 
         stage('Deploy to Target') {
             steps {
-                sshagent(['user']) {
+                sshagent(['webserver-key']) {
                     sh "echo '📦 ${TARGET_DIR}에 배포 중...'"
                     sh "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'mkdir -p ${TARGET_DIR}'"
                     sh "scp index.html ${DEPLOY_USER}@${DEPLOY_HOST}:${TARGET_DIR}/index.html"
