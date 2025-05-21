@@ -13,9 +13,11 @@ pipeline {
             steps {
                 script {
                     def result = sh(
-                        script: "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'readlink ${CURRENT_LINK}' || echo none'",
+                        script: "ssh ${DEPLOY_USER}@${DEPLOY_HOST} 'readlink ${CURRENT_LINK}' || echo none",
                         returnStdout: true
                     ).trim()
+
+                    echo "현재 링크 경로: ${result}"
 
                     if (result.contains('webapp_blue')) {
                         env.TARGET = 'webapp_green'
@@ -28,6 +30,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Deploy to Target') {
             steps {
