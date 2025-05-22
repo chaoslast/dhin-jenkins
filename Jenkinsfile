@@ -6,8 +6,8 @@ pipeline {
     BLUE_DIR = "/var/www/webapp_blue"
     GREEN_DIR = "/var/www/webapp_green"
     LIVE_DIR = "/var/www/webapp"
-    SLACK_CHANNEL = "#배포알림"
-    SLACK_TOKEN_CREDENTIAL_ID = "slack-token" // Jenkins에 등록된 Slack 자격증명 ID
+    SLACK_CHANNEL = "#dhin-test"
+    SLACK_TOKEN_CREDENTIAL_ID = "dhin-Notice" // Jenkins에 등록된 Slack 자격증명 ID
   }
 
   options {
