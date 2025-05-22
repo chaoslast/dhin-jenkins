@@ -6,11 +6,20 @@ pipeline {
     BLUE_DIR = "/var/www/webapp_blue"
     GREEN_DIR = "/var/www/webapp_green"
     LIVE_DIR = "/var/www/webapp"
+    SLACK_CHANNEL = "#배포알림"
+    SLACK_TOKEN_CREDENTIAL_ID = "slack-token" // Jenkins에 등록된 Slack 자격증명 ID
+  }
+
+  options {
+    timestamps()
   }
 
   stages {
     stage('Deploy to Blue') {
       steps {
+        script {
+          slackSend(channel: SLACK_CHANNEL, message: "📦 [Deploy] Blue 디렉터리에 파일 배포 시작합니다.")
+        }
         sshagent (credentials: ['webserver-key']) {
           sh """
             echo '📦 최신 index.html을 ${BLUE_DIR}에 배포 중...'
@@ -18,6 +27,9 @@ pipeline {
             ssh ${WEB_SERVER} 'sudo chown user:user ${BLUE_DIR}'
             scp index.html ${WEB_SERVER}:${BLUE_DIR}/index.html
           """
+        }
+        script {
+          slackSend(channel: SLACK_CHANNEL, message: "✅ [Deploy] Blue 디렉터리 배포 완료되었습니다.")
         }
       }
     }
@@ -30,6 +42,9 @@ pipeline {
 
     stage('Backup & Deploy to Live') {
       steps {
+        script {
+          slackSend(channel: SLACK_CHANNEL, message: "🚀 [Deploy] 운영 서버 백업 및 Blue → Live 반영 시작")
+        }
         sshagent (credentials: ['webserver-key']) {
           sh """
             echo '📂 현재 운영 index.html을 백업 (green) 중...'
@@ -49,6 +64,9 @@ pipeline {
             '
           """
         }
+        script {
+          slackSend(channel: SLACK_CHANNEL, message: "✅ [Deploy] Live 반영 완료")
+        }
       }
     }
 
@@ -62,7 +80,7 @@ pipeline {
           )
 
           if (doRollback) {
-            echo '⏪ 롤백을 진행합니다...'
+            slackSend(channel: SLACK_CHANNEL, message: "⏪ [Rollback] 롤백 시도 중...")
             sshagent (credentials: ['webserver-key']) {
               sh """
                 ssh ${WEB_SERVER} '
@@ -75,12 +93,14 @@ pipeline {
                 '
               """
             }
+            slackSend(channel: SLACK_CHANNEL, message: "✅ [Rollback] 롤백 완료")
           } else {
-            echo '✅ 롤백 없이 완료됩니다.'
+            slackSend(channel: SLACK_CHANNEL, message: "🚀 [Deploy] 롤백 없이 정상 배포 완료")
           }
         }
       }
     }
+
     stage('Clean Up Blue') {
       steps {
         sshagent (credentials: ['webserver-key']) {
@@ -89,7 +109,22 @@ pipeline {
             ssh ${WEB_SERVER} 'sudo rm -rf ${BLUE_DIR}'
           """
         }
+        script {
+          slackSend(channel: SLACK_CHANNEL, message: "🧹 [CleanUp] Blue 디렉터리 삭제 완료")
+        }
       }
+    }
+  }
+
+  post {
+    success {
+      slackSend(channel: SLACK_CHANNEL, message: "🎉 [SUCCESS] 전체 배포 파이프라인 완료")
+    }
+    failure {
+      slackSend(channel: SLACK_CHANNEL, message: "❌ [FAILURE] 파이프라인 실행 중 오류 발생")
+    }
+    aborted {
+      slackSend(channel: SLACK_CHANNEL, message: "⚠️ [ABORTED] 파이프라인 수동 중단됨")
     }
   }
 }
